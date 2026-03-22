@@ -1,0 +1,163 @@
+# Task 14 – CloudKicker Deployment (AWS)
+
+---
+
+## 1. Instance Creation
+
+* Created an EC2 instance using **Ubuntu 24.04 LTS**
+* Selected **t3.micro (free tier eligible)**
+* Created a key pair: `cloudkicker-key.pem`
+
+### Security Group Configuration:
+
+* Port 22 (SSH) → Allowed
+* Port 80 (HTTP) → Allowed
+* Port 5000 → NOT allowed
+
+---
+
+## 2. SSH Connection from Kali
+
+Moved key and set permission:
+
+chmod 400 cloudkicker-key.pem
+
+Connected to instance:
+
+ssh -i cloudkicker-key.pem ubuntu@54.227.103.29
+
+---
+
+## 3. Installing Required Packages
+
+Updated system:
+
+sudo apt update
+
+Installed required tools:
+
+sudo apt install git -y
+sudo apt install python3 python3-venv python3-pip -y
+sudo apt install nginx -y
+
+Checked nginx status:
+
+sudo systemctl status nginx
+
+---
+
+## 4. Cloning Flask Project
+
+git clone https://github.com/anusreerajeev00/12-fsd-flask.git
+cd 12-fsd-flask
+
+---
+
+## 5. Creating Virtual Environment
+
+Created venv:
+
+python3 -m venv venv
+
+Activated venv:
+
+source venv/bin/activate
+
+Installed dependencies:
+
+pip install -r requirements.txt
+
+---
+
+## 6. Running Flask (Local Only)
+
+Started Flask server:
+
+flask run --host=127.0.0.1 --port=5000
+
+* Flask is bound to **127.0.0.1:5000**
+* Not accessible from the internet
+
+---
+
+## 7. Configuring Nginx Reverse Proxy
+
+Created config file:
+
+sudo nano /etc/nginx/sites-available/cloudkicker
+
+Added configuration:
+
+server {
+listen 80;
+server_name _;
+
+```
+location / {
+    proxy_pass http://127.0.0.1:5000;
+
+    proxy_set_header Host $host;
+    proxy_set_header X-Real-IP $remote_addr;
+    proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+}
+```
+
+}
+
+Enabled site:
+
+sudo ln -s /etc/nginx/sites-available/cloudkicker /etc/nginx/sites-enabled/
+
+Removed default site:
+
+sudo rm /etc/nginx/sites-enabled/default
+
+Restarted nginx:
+
+sudo systemctl restart nginx
+
+---
+
+## 8. Firewall Configuration
+
+AWS Security Group settings:
+
+* Port 80 → Open (public access)
+* Port 22 → Open (SSH)
+* Port 5000 → Not exposed
+
+---
+
+## 9. Accessing the Application
+
+Opened in browser:
+
+http://54.227.103.29/
+
+* Root URL shows **404 error**
+* Reason: No route defined for "/"
+
+Working URLs:
+
+http://54.227.103.29/register
+http://54.227.103.29/login
+
+---
+
+## 10. Testing Functionality
+
+* Registered a new user
+* Redirected to login page
+* Logged in successfully
+* Dashboard displayed
+
+---
+
+## 11. Conclusion
+
+* Flask runs on **127.0.0.1:5000**
+* Nginx runs on **port 80**
+* Flask is not exposed publicly
+* Nginx handles all incoming requests
+
+Application works correctly through reverse proxy setup.
